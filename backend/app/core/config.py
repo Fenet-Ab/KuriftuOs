@@ -1,6 +1,7 @@
 from functools import lru_cache
 
-from pydantic_settings import BaseSettings, PostgresDsn, RedisDsn
+from pydantic import PostgresDsn, RedisDsn
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -10,7 +11,7 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int
 
     DATABASE_URL: PostgresDsn
-    REDIS_URL: RedisDsn | None = None
+    REDIS_URL: RedisDsn
 
     GOOGLE_API_KEY: str
 
@@ -22,7 +23,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
-        extra = "ingnore"
+        extra = "ignore"
         env_file_encoding = "utf-8"
 
 
