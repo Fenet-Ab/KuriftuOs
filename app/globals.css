@@ -10,6 +10,14 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Resort Vibrant Palette */
+  --color-resort-green: #2d5a27;
+  --color-resort-orange: #f59e0b;
+  --color-resort-yellow: #fbbf24;
+  --color-resort-parchment: #fdf9f1;
+  --color-forest: #0b1a0e;
+  --color-brass: #c5a059;
 }
 
 @media (prefers-color-scheme: dark) {
