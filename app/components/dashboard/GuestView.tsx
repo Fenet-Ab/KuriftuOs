@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardCard from "./DashboardCard";
-import { Search, Calendar, Clock, ArrowRight } from "lucide-react";
+import { Search, Calendar, Bed, ArrowRight } from "lucide-react";
 import toast from "react-hot-toast";
+import SmartBooking from "./SmartBooking";
 
 const ReservationItem = ({ location, date, status } : { location: string, date: string, status: string }) => (
   <div className="flex flex-col sm:flex-row sm:items-center justify-between p-6 rounded-3xl bg-neutral-50/50 border border-neutral-100 group hover:shadow-lg hover:shadow-neutral-200/50 transition-all mb-4 last:border-0 hover:bg-neutral-50 group gap-4">
@@ -27,6 +28,33 @@ const GuestView = () => {
   });
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [isBooking, setIsBooking] = useState<string | null>(null);
+  const [user, setUser] = useState<any>(null);
+  const [bookings, setBookings] = useState<any[]>([]);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        setUser(parsed);
+        fetchBookings();
+    }
+  }, []);
+
+  const fetchBookings = async () => {
+    try {
+        const token = localStorage.getItem("access_token");
+        const response = await fetch(`http://localhost:8000/api/v1/bookings/my-bookings`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+        const data = await response.json();
+        if (response.ok) setBookings(data);
+    } catch (err) {
+        console.error("Failed to fetch bookings", err);
+    }
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,6 +74,73 @@ const GuestView = () => {
       toast.error("Failed to search rooms");
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const handleBookRoom = async (roomType: string, price: number) => {
+    if (!user) return toast.error("Please login to book a room");
+    if (!searchData.check_in || !searchData.check_out) return toast.error("Please select dates first");
+
+    const confirmBooking = window.confirm(`Confirm your booking for ${roomType.charAt(0).toUpperCase() + roomType.slice(1)} Room?`);
+    if (!confirmBooking) return;
+    
+    setIsBooking(roomType);
+    try {
+        const token = localStorage.getItem("access_token");
+        
+        // 1. Create the booking
+        const bookingResponse = await fetch("http://localhost:8000/api/v1/bookings", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                guest_id: user.guest_id || user.id || 0, // Fallback to id if guest_id is missing
+                room_type: roomType,
+                check_in: searchData.check_in,
+                check_out: searchData.check_out
+            })
+        });
+
+        const bookingData = await bookingResponse.json();
+        if (!bookingResponse.ok) throw new Error(bookingData.detail || "Booking creation failed");
+
+        toast.loading("Reserving your room and preparing payment link...", { duration: 3000 });
+
+        // 2. Initialize Payment (Wait a moment to simulate refinement)
+        const paymentResponse = await fetch("http://localhost:8000/api/v1/bookings/pay", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                booking_id: bookingData.id,
+                amount: bookingData.total_price,
+                email: user.email,
+                first_name: user.name.split(" ")[0] || "Guest",
+                last_name: user.name.split(" ")[1] || "User"
+            })
+        });
+
+        const paymentData = await paymentResponse.json();
+        if (!paymentResponse.ok) throw new Error(paymentData.message || "Payment initialization failed");
+
+        // 3. Redirect to Chapa
+        if (paymentData.status === "success" && paymentData.data?.checkout_url) {
+            toast.success("Ready! Redirecting to Chapa Payment...");
+            setTimeout(() => {
+                window.location.href = paymentData.data.checkout_url;
+            }, 1500);
+        } else {
+            throw new Error("Invalid payment response from provider");
+        }
+
+    } catch (err: any) {
+        toast.error(err.message || "An unexpected error occurred during booking");
+    } finally {
+        setIsBooking(null);
     }
   };
 
@@ -121,14 +216,21 @@ const GuestView = () => {
                   </div>
                   <p className="text-lg font-black text-resort-green">${cat.price_per_night}<span className="text-[10px] font-normal text-neutral-400">/night</span></p>
                 </div>
-                <button className="w-full py-3 rounded-xl border border-resort-green/30 text-resort-green text-[10px] font-black uppercase tracking-widest group-hover:bg-resort-green group-hover:text-white transition-all">
-                  BOOK THIS ROOM
+                <button 
+                  onClick={() => handleBookRoom(cat.name, cat.price_per_night)}
+                  disabled={isBooking === cat.name}
+                  className="w-full py-3 rounded-xl border border-resort-green/30 text-resort-green text-[10px] font-black uppercase tracking-widest hover:bg-resort-green hover:text-white transition-all disabled:opacity-50"
+                >
+                  {isBooking === cat.name ? "PROCESSING..." : "BOOK THIS ROOM"}
                 </button>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* AI Smart Booking Section */}
+      <SmartBooking user={user} />
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
         <DashboardCard 
@@ -155,18 +257,22 @@ const GuestView = () => {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         <div className="xl:col-span-2 bg-white p-10 rounded-3xl border border-neutral-100 shadow-sm relative overflow-hidden group">
           <h3 className="text-xl font-bold mb-8 text-forest flex items-center gap-2">
-             <span>📅</span> Upcoming Highlights
+             <span>📅</span> Your Reservations
           </h3>
-          <ReservationItem 
-              location="Kuriftu Resort & Spa Bishoftu"
-              date="Apr 15 - Apr 18"
-              status="Confirmed"
-          />
-          <ReservationItem 
-              location="Entoto Park Resort"
-              date="May 10 - May 12"
-              status="Pending"
-          />
+          {bookings.length > 0 ? (
+            bookings.map((booking: any) => (
+                <ReservationItem 
+                    key={booking.id}
+                    location={`Kuriftu Resort (${booking.room_type})`}
+                    date={`${new Date(booking.check_in).toLocaleDateString()} - ${new Date(booking.check_out).toLocaleDateString()}`}
+                    status={booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                />
+            ))
+          ) : (
+            <div className="py-12 text-center bg-neutral-50 rounded-[2rem] border border-dashed border-neutral-200">
+               <p className="text-neutral-400 text-sm font-medium italic">No active reservations yet. Use the AI to find your perfect room!</p>
+            </div>
+          )}
           <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-resort-green/5 rounded-full blur-3xl" />
         </div>
 
@@ -176,7 +282,10 @@ const GuestView = () => {
              <p className="text-white/70 text-sm font-light mb-8">
                Talk to our AI Concierge for anything during your stay — from booking a massage to ordering late-night snacks.
              </p>
-             <button className="w-full bg-white text-resort-green py-5 rounded-2xl font-bold tracking-widest text-xs uppercase hover:bg-neutral-100 transition-all shadow-xl group">
+             <button 
+               onClick={() => window.dispatchEvent(new CustomEvent('open-kuriftu-ai'))}
+               className="w-full bg-white text-resort-green py-5 rounded-2xl font-bold tracking-widest text-xs uppercase hover:bg-neutral-100 transition-all shadow-xl group"
+             >
                OPEN AI CONCIERGE 
                <span className="inline-block transition-transform group-hover:translate-x-2 ml-2">→</span>
              </button>

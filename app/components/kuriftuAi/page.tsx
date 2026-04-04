@@ -16,6 +16,10 @@ const KuriftuAi = () => {
 
     useEffect(() => {
         setIsLoggedIn(!!localStorage.getItem("access_token"));
+
+        const handleOpenAi = () => setIsOpen(true);
+        window.addEventListener('open-kuriftu-ai', handleOpenAi);
+        return () => window.removeEventListener('open-kuriftu-ai', handleOpenAi);
     }, [isOpen]);
 
     useEffect(() => {
@@ -123,7 +127,7 @@ const KuriftuAi = () => {
     };
 
     return (
-        <div className="absolute bottom-10 right-10 z-50 group">
+        <div className="fixed bottom-10 right-10 z-[100] group">
             {/* Chat Window */}
             {isOpen && (
                 <div className="absolute bottom-20 right-0 w-[400px] max-h-[600px] h-[80vh] bg-white rounded-[3rem] shadow-2xl border border-neutral-100 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-10 duration-500">

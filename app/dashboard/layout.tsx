@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import Sidebar from "../components/dashboard/Sidebar";
+import KuriftuAi from "../components/kuriftuAi/page";
 
 export default function DashboardLayout({
   children,
@@ -128,6 +129,7 @@ export default function DashboardLayout({
           </footer>
         </main>
       </div>
+      <KuriftuAi />
     </div>
   );
 }
