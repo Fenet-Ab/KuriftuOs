@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 from app.api.v1.endpoints import auth, guest, booking, room
-from app.api.v1.endpoints import feedback, ai
+from app.api.v1.endpoints import feedback, ai, pricing
 
 
 
@@ -12,3 +12,4 @@ api_router.include_router(booking.router, prefix="/bookings", tags=["Bookings"])
 api_router.include_router(room.router, prefix="/rooms", tags=["Rooms (Admin)"])
 api_router.include_router(feedback.router, prefix="/feedbacks", tags=["Feedback"])
 api_router.include_router(ai.router, prefix="/ai", tags=["Selam AI Concierge"])
+api_router.include_router(pricing.router, prefix="/pricing", tags=["Dynamic Pricing"])

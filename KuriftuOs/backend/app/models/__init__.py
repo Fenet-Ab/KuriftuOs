@@ -6,3 +6,4 @@ from .feedback import Feedback
 from .staff import Staff
 from .chat import ChatMessage
 from .task import Task
+from .pricing import Occasion, PriceRule

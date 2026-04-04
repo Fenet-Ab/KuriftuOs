@@ -18,7 +18,8 @@ import {
   User,
   Settings,
   LogOut,
-  Plus
+  Plus,
+  DollarSign
 } from "lucide-react";
 
 interface SidebarProps {
@@ -43,6 +44,7 @@ const Sidebar = ({ role, isOpen, onClose }: SidebarProps) => {
         { icon: <Hotel size={20} />, label: "RESORT SETTINGS", path: "/dashboard/settings" },
         { icon: <BarChart size={20} />, label: "ALL ANALYTICS", path: "/dashboard/analytics" },
         { icon: <Plus size={20} />, label: "ADD ROOM", path: "/dashboard/rooms/add" },
+        { icon: <DollarSign size={20} />, label: "DYNAMIC PRICING", path: "/dashboard/pricing" },
         { icon: <FileText size={20} />, label: "TASKS", path: "/dashboard/tasks" },
       ];
     }
@@ -53,6 +55,7 @@ const Sidebar = ({ role, isOpen, onClose }: SidebarProps) => {
         { icon: <FileText size={20} />, label: "REPORTS", path: "/dashboard/reports" },
         { icon: <Calendar size={20} />, label: "ALL BOOKINGS", path: "/dashboard/bookings" },
         { icon: <Users size={20} />, label: "TEAM", path: "/dashboard/team" },
+        { icon: <DollarSign size={20} />, label: "DYNAMIC PRICING", path: "/dashboard/pricing" },
         { icon: <FileText size={20} />, label: "TASKS", path: "/dashboard/tasks" },
       ];
     }

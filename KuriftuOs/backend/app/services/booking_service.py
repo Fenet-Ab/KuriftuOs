@@ -7,6 +7,7 @@ from app.core.config import settings
 from fastapi import HTTPException
 import uuid
 from app.services.ai_booking import suggest_room
+from app.services.pricing_engine import calculate_dynamic_price
 
 # Check if rooms are available
 async def check_availability(db: AsyncSession, room_type: str):
@@ -55,10 +56,14 @@ async def process_booking(db: AsyncSession, booking_data, current_user=None):
     category = result.scalar_one()
     category.available_rooms -= 1
     
-    # Calculate total price
+    # Calculate total price using the dynamic pricing engine
     from datetime import datetime
     delta = (booking_data.check_out - booking_data.check_in).days
-    total_price = (delta if delta > 0 else 1) * price_per_night
+    nights = delta if delta > 0 else 1
+    pricing = await calculate_dynamic_price(
+        db, booking_data.room_type, booking_data.check_in, booking_data.check_out
+    )
+    total_price = pricing["total_dynamic_price"]
     
     new_booking = Booking(
         guest_id=guest_id,
