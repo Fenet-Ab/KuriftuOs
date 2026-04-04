@@ -13,12 +13,11 @@ import {
   FileText,
   Calendar,
   Bed,
-  Palmtree,
   MessageSquare,
   User,
   Settings,
-  LogOut,
-  Plus
+  Plus,
+  TrendingUp,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -39,21 +38,22 @@ const Sidebar = ({ role, isOpen, onClose }: SidebarProps) => {
     if (role === "admin") {
       return [
         ...baseLinks,
+        { icon: <TrendingUp size={20} />, label: "REVSENSE", path: "/dashboard/revsense" },
+        { icon: <FileText size={20} />, label: "TASKS", path: "/dashboard/tasks" },
         { icon: <Users size={20} />, label: "STAFF MANAGEMENT", path: "/dashboard/staff" },
         { icon: <Hotel size={20} />, label: "RESORT SETTINGS", path: "/dashboard/settings" },
         { icon: <BarChart size={20} />, label: "ALL ANALYTICS", path: "/dashboard/analytics" },
         { icon: <Plus size={20} />, label: "ADD ROOM", path: "/dashboard/rooms/add" },
-        { icon: <FileText size={20} />, label: "TASKS", path: "/dashboard/tasks" },
       ];
     }
 
     if (role === "manager") {
       return [
         ...baseLinks,
-        { icon: <FileText size={20} />, label: "REPORTS", path: "/dashboard/reports" },
+        { icon: <TrendingUp size={20} />, label: "REVSENSE", path: "/dashboard/revsense" },
+        { icon: <FileText size={20} />, label: "TASKS", path: "/dashboard/tasks" },
         { icon: <Calendar size={20} />, label: "ALL BOOKINGS", path: "/dashboard/bookings" },
         { icon: <Users size={20} />, label: "TEAM", path: "/dashboard/team" },
-        { icon: <FileText size={20} />, label: "TASKS", path: "/dashboard/tasks" },
       ];
     }
 
