@@ -3,8 +3,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.schemas.staff import StaffCreate, StaffLogin, StaffResponse, LoginResponse, StaffUpdate
 from app.services.auth_service import register_staff, login_staff, update_staff
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, check_role
 from app.models.staff import Staff
+from sqlalchemy import select
 
 router = APIRouter()
 
@@ -48,3 +49,11 @@ async def update_profile(
         return await update_staff(db, current_user, data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+@router.get("/staff", response_model=list[StaffResponse])
+async def list_staff(
+    db: AsyncSession = Depends(get_db),
+    _admin: Staff = Depends(check_role(["manager", "admin"]))
+):
+    result = await db.execute(select(Staff))
+    return result.scalars().all()

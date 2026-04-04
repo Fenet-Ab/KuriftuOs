@@ -1,5 +1,8 @@
 import google.generativeai as genai
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from app.core.config import settings
+from app.models.chat import ChatMessage
 
 # Configure Gemini
 genai.configure(api_key=settings.GEMINI_API_KEY)
@@ -79,16 +82,46 @@ def _fallback_response(user_message: str, guest_name: str) -> str:
         "Please tell me exactly what you need, and I will give a direct answer."
     )
 
-async def generate_selam_response(user_message: str, guest_name: str = "Guest"):
+async def get_chat_history(db: AsyncSession, guest_id: int, limit: int = 10):
+    try:
+        stmt = select(ChatMessage).where(ChatMessage.guest_id == guest_id).order_by(ChatMessage.timestamp.desc()).limit(limit)
+        result = await db.execute(stmt)
+        # Reverse to get chronological order
+        return list(reversed(result.scalars().all()))
+    except Exception as e:
+        print(f"Error fetching history: {e}")
+        return []
+
+async def save_chat_message(db: AsyncSession, guest_id: int, role: str, message: str):
+    try:
+        new_msg = ChatMessage(guest_id=guest_id, role=role, message=message)
+        db.add(new_msg)
+        await db.commit()
+    except Exception as e:
+        print(f"Error saving message: {e}")
+        await db.rollback()
+
+async def generate_selam_response(db: AsyncSession, user_message: str, guest_name: str = "Guest", guest_id: int = None):
     """
-    Selam AI: Personalized concierge with smart room control detection.
+    Selam AI: Personalized concierge with smart room control detection and memory.
     """
+    # 1. Load history if guest_id exists
+    history = []
+    if guest_id:
+        history = await get_chat_history(db, guest_id)
+        # Save user message
+        await save_chat_message(db, guest_id, "user", user_message)
+
+    history_context = ""
+    if history:
+        history_entries = [f"{m.role.capitalize()}: {m.message}" for m in history]
+        history_context = "\nRECENT CONVERSATION HISTORY:\n" + "\n".join(history_entries) + "\n"
     
     prompt = f"""
     You are 'Selam AI', the signature 5-star concierge for Kuriftu Resort & Spa. 
     Your personality is sophisticated, extremely warm, helpful, and deeply rooted in Ethiopian hospitality.
     The current guest's name is {guest_name}.
-
+    {history_context}
     RESORT LOCATIONS & HIGHLIGHTS:
     - Kuriftu Bishoftu: Our flagship resort with a Luxury Spa, Water Park, and cinematic lake views.
     - Kuriftu Entoto Park: Glamping, Zip-lining, Go-karting, and forest spa.
@@ -105,7 +138,10 @@ async def generate_selam_response(user_message: str, guest_name: str = "Guest"):
     1. Greeting: Welcome {guest_name} warmly.
     2. Deep Knowledge: Answer about specific resorts.
     3. Actionable Intent Detection: Detect room change needs and APPEND [ACTION:mood:...] or [ACTION:device:...].
-    4. Language: Amharic or English.
+    4. Task Requests: If the guest asks for services like cleaning, plumbing, fresh towels, or reports an issue, detect it and APPEND [ACTION:task:category:description].
+       Categories: housekeeping, maintenance, room_service, concierge.
+    5. Memory: Use the RECENT CONVERSATION HISTORY above to provide continuity.
+    6. Language: Amharic or English.
 
     GUEST MESSAGE:
     "{user_message}"
@@ -114,12 +150,17 @@ async def generate_selam_response(user_message: str, guest_name: str = "Guest"):
     """
 
     try:
-        # Switching to synchronous call to avoid potential gRPC/async hangs in this env
         response = model.generate_content(prompt)
-        return response.text.strip()
+        ai_text = response.text.strip()
+        
+        # 2. Save AI response if guest_id exists
+        if guest_id:
+            await save_chat_message(db, guest_id, "assistant", ai_text)
+            
+        return ai_text
     except Exception as e:
         print(f"AI ERROR: {str(e)}")
         return _fallback_response(user_message, guest_name)
 
-async def handle_guest_message(message: str, guest_name: str = "Guest"):
-    return await generate_selam_response(message, guest_name)
+async def handle_guest_message(db: AsyncSession, message: str, guest_name: str = "Guest", guest_id: int = None):
+    return await generate_selam_response(db, message, guest_name, guest_id)

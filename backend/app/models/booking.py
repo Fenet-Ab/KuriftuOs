@@ -14,6 +14,7 @@ class Booking(Base):
     check_out = Column(DateTime)
 
     status = Column(String, default="pending")  # pending, confirmed, cancelled
+    total_price = Column(Integer, nullable=True) # Final price paid
     transaction_id = Column(String, nullable=True) # For Chapa
 
     created_at = Column(DateTime, default=datetime.utcnow)

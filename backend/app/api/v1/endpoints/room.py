@@ -1,23 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.future import select
-from app.db.session import get_db
-from app.api.deps import get_current_active_user, check_role
-from app.models.room import RoomCategory
-from app.schemas.room import RoomCategoryCreate, RoomCategoryUpdate, RoomCategoryResponse
-from app.models.staff import Staff
 
+from app.db.session import get_db
+from app.api.deps import check_role
+from app.models.staff import Staff
 from app.models.room import RoomCategory, Room
 from app.schemas.room import (
-    RoomCategoryCreate, 
-    RoomCategoryUpdate, 
+    RoomCategoryCreate,
+    RoomCategoryUpdate,
     RoomCategoryResponse,
     RoomCreate,
     RoomResponse,
-    RoomSearchRequest
+    RoomInventoryResponse,
 )
-from app.models.staff import Staff
-from app.models.booking import Booking
 
 router = APIRouter()
 
@@ -77,6 +73,27 @@ async def create_room(
 async def list_rooms(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Room))
     return result.scalars().all()
+
+
+@router.get("/stats", response_model=RoomInventoryResponse)
+async def room_inventory_stats(db: AsyncSession = Depends(get_db)):
+    """
+    Get aggregated statistics by summing up all room categories.
+    This ensures consistency with the room_categories table seen in the dashboard.
+    """
+    cat_result = await db.execute(select(RoomCategory))
+    categories = cat_result.scalars().all()
+    
+    total_rooms = sum(c.total_rooms for c in categories) if categories else 0
+    available_rooms = sum(c.available_rooms for c in categories) if categories else 0
+    booked_rooms = total_rooms - available_rooms
+    
+    return RoomInventoryResponse(
+        total_rooms=total_rooms,
+        available_rooms=available_rooms,
+        booked_rooms=booked_rooms,
+    )
+
 
 @router.get("/rooms/search", response_model=list[RoomCategoryResponse])
 async def search_available_categories(

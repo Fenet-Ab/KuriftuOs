@@ -7,6 +7,7 @@ from app.models.guest import Guest
 from app.models.staff import Staff
 from app.models.feedback import Feedback
 from app.models.automation import SmartDevice, RoomMood
+from app.models.chat import ChatMessage
 
 async def init_db():
     async with engine.begin() as conn:

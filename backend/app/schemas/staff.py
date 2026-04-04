@@ -17,6 +17,7 @@ class StaffResponse(BaseModel):
     role: str
     department: str | None = None
     avatar_url: str | None = None
+    guest_id: int | None = None
     is_active: bool = True
 
     class Config:

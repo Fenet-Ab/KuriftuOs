@@ -52,3 +52,11 @@ class RoomSearchRequest(BaseModel):
     category_name: Optional[str] = None
     check_in: str # "YYYY-MM-DD HH:MM:SS"
     check_out: str # "YYYY-MM-DD HH:MM:SS"
+
+
+class RoomInventoryResponse(BaseModel):
+    """Aggregate counts for marketing/public room inventory."""
+
+    total_rooms: int
+    available_rooms: int
+    booked_rooms: int
