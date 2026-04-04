@@ -1,65 +1,82 @@
-# KuriftuOs Dynamic Pricing Engine
+# KuriftuOs: The Future of Resort Management
 
-A rule-based and ML-assisted dynamic pricing engine for the Kuriftu resort. This system allows for real-time room rate adjustments based on holidays, demand, lead time, and seasonality.
+![Kuriftu Resort](https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=1470&ixlib=rb-4.0.3)
 
-## 🚀 Features
+KuriftuOs is a state-of-the-art Operation System designed specifically for luxury resorts like Kuriftu. It combines seamless guest experiences with powerful administrative tools through AI-driven automation, real-time analytics, and dynamic optimizations.
 
-- **Multi-Factor Pricing**: Combines 5 distinct multipliers to calculate the final room rate.
-- **Ethiopian Holiday Support**: Pre-seeded with 16 major Ethiopian and international holidays.
-- **ML Calibration Layer**: Optional Gradient Boosting Regressor (`scikit-learn`) to optimize multipliers based on historical booking data (once 100+ bookings are reached).
-- **Admin Dashboard**: A premium Next.js interface for real-time quote calculation and occasion management.
-- **Integration**: Seamlessly integrated into the default booking flow.
+## 🌟 Vision & Goals
+- **Guest-Centric Experience**: Personalized stay through AI Concierge and smart room controls.
+- **Operational Efficiency**: Automated task management and staff scheduling.
+- **Revenue Optimization**: Data-driven dynamic pricing to maximize occupancy and revenue.
+- **Digital Transformation**: Bringing luxury hospitality into the age of AI and automation.
 
-## 🧮 Pricing Logic
+---
 
-The final price is calculated using the following formula:
-`Final Price = Base Price × Occasion × Demand × Lead Time × Day-of-Week × Season`
+## 🏗️ Core Components
 
-| Factor | Description | Example |
-|---|---|---|
-| **Occasion** | Premium for holidays/festivals | Enkutatash (1.5x) |
-| **Demand** | Adjusts based on current occupancy | >80% Full (1.2x) |
-| **Lead Time** | Rewards early booking, surcharges last-minute | <3 Days (1.15x) |
-| **Day of Week** | Weekend vs. Weekday adjustments | Saturday (1.1x) |
-| **Seasonality** | Monthly tiers (Peak, Shoulder, Low) | September (1.15x) |
+### 🧠 AI Concierge & Smart Automation
+- **AI-Powered Chat**: Real-time guest assistance using Gemini LLMs.
+- **Smart Room Control**: Direct control of lighting, temperature, and mood via the app.
+- **Voice Commands**: Multilingual support for guest requests.
 
-## 🛠️ Setup & Installation
+### 📈 Dynamic Pricing Engine
+Our proprietary engine adjusts room rates in real-time based on recursive factors:
+- **Ethiopian Context**: Automatic premium adjustments for holidays like *Enkutatash*, *Meskel*, and *Genna*.
+- **Market Demand**: Real-time occupancy-based surcharges.
+- **Optimization**: Gradient Boosting ML model calibrates multipliers based on booking history.
 
-### 1. Database Migration
-Ensure your database is running and run the initialization script to create the new tables (`occasions`, `price_rules`):
+### 📊 Staff & Task Management
+- **Role-Based Dashboards**: Tailored views for Admins, Managers, and Staff.
+- **Automated Dispatch**: Guest requests are instantly routed to the relevant department (Housekeeping, Maintenance, etc.).
+
+---
+
+## 💻 Technical Architecture
+
+### Backend (Python/FastAPI)
+- **Framework**: FastAPI (Asynchronous)
+- **Database**: PostgreSQL with `pgvector` for similarity search in AI responses.
+- **ORMs**: SQLAlchemy 2.0 (Async) + Alembic for migrations.
+- **Auth**: JWT-based security with department-level role checks.
+
+### Frontend (TypeScript/Next.js)
+- **Framework**: Next.js 14 (App Router)
+- **Styling**: Tailwind CSS & Framer Motion for premium animations.
+- **Icons**: Lucide React.
+- **State**: Precise real-time updates via API polling and hooks.
+
+---
+
+## 🛠️ Quick Start
+
+### 1. Requirements
+- Python 3.10+
+- Node.js 18+
+- Docker (for database & redis)
+
+### 2. Backend Setup
 ```bash
 cd KuriftuOs/backend
-export PYTHONPATH=$PYTHONPATH:.
+# Initialize environment (.env)
+./switch_env.sh local
+# Install dependencies
+pip install -r requirements.txt
+# Create & Seed Database
 python3 init_db.py
-```
-
-### 2. Seed Pricing Data
-Populate the database with the baseline rules and Ethiopian holidays:
-```bash
 python3 seed_pricing.py
-```
-
-### 3. Run Backend
-```bash
+# Start Server
 uvicorn app.main:app --reload
 ```
 
-## 🖥️ Admin Dashboard
-Access the pricing management console at `/dashboard/pricing`.
-- **Live Price Calculator**: See a line-by-line breakdown of how factors affect the final price.
-- **Occasion Manager**: Create, edit, and delete seasonal multipliers and holidays.
-
-## 🧪 Testing
-Run the comprehensive suite of 24 unit tests:
+### 3. Frontend Setup
 ```bash
-cd KuriftuOs/backend
-python3 -m pytest tests/test_pricing_engine.py -v
+cd KuriftuOs/frontend
+npm install
+npm run dev
 ```
 
-## 🏗️ Technical Stack
-- **Backend**: FastAPI, SQLAlchemy, PostgreSQL (pgvector), Scikit-Learn
-- **Frontend**: Next.js 14, Tailwind CSS, Lucide React
-- **ML**: Gradient Boosting Regressor (Joblib)
+## 📝 License
+Proprietary software developed for Kuriftu Resort & Entoto Park.
 
 ---
-*Developed for Kuriftu Resort - Advanced Agentic Coding Project*
+*Transforming hospitality through agentic automation.*
