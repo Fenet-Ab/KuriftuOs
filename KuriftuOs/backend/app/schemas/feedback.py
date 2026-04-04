@@ -15,3 +15,8 @@ class FeedbackResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class FeedbackAnalytics(BaseModel):
+    total_feedbacks: int
+    sentiment_distribution: dict[str, int]

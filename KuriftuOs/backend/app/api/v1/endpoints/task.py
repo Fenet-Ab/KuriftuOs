@@ -69,11 +69,10 @@ async def create_task(
     payload: TaskCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    """
-    Called by Selam AI create_task() tool via internal HTTP.
-    No JWT required — protected by X-Internal-Token header check (handled in middleware).
-    """
-    task = Task(**payload.model_dump())
+    from app.services.gemini_service import analyze_sentiment
+    sentiment = await analyze_sentiment(payload.description)
+    
+    task = Task(**payload.model_dump(), sentiment=sentiment)
     db.add(task)
     await db.commit()
     await db.refresh(task)

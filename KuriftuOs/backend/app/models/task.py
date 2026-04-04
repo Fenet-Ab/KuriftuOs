@@ -36,3 +36,7 @@ class Task(Base):
     property_id = Column(Integer, default=1) # Default to main property
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     resolved_at = Column(DateTime(timezone=True), nullable=True)
+    
+    # AI SENTIMENT ANALYSIS
+    sentiment = Column(String, default="neutral") # Options: positive, negative, neutral
+    sentiment_score = Column(Integer, default=0) # Qualitative score from -1 to 1 (scaled as -100 to 100 for simplicity)

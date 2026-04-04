@@ -1,12 +1,22 @@
 import google.generativeai as genai
+import logging
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.config import settings
 from app.models.chat import ChatMessage
 
+logger = logging.getLogger("selam_ai")
+
 # Configure Gemini
-genai.configure(api_key=settings.GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-2.0-flash")
+model = None
+if settings.GEMINI_API_KEY:
+    try:
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        model = genai.GenerativeModel("gemini-2.0-flash")
+    except Exception as exc:
+        logger.error("Failed to configure Gemini model: %s", exc, exc_info=True)
+else:
+    logger.warning("GEMINI_API_KEY is not configured. Selam AI will use fallback responses.")
 
 
 def _fallback_response(user_message: str, guest_name: str) -> str:
@@ -149,6 +159,16 @@ async def generate_selam_response(db: AsyncSession, user_message: str, guest_nam
     SELAM AI RESPONSE:
     """
 
+    if model is None:
+        logger.warning("Gemini model is unavailable, returning fallback response.")
+        fallback_msg = (
+            f"Selam {guest_name}! Our concierge AI is temporarily unavailable due to API configuration. "
+            "Please contact resort staff for assistance."
+        )
+        if guest_id:
+            await save_chat_message(db, guest_id, "assistant", fallback_msg)
+        return fallback_msg
+
     try:
         response = model.generate_content(prompt)
         ai_text = response.text.strip()
@@ -159,8 +179,11 @@ async def generate_selam_response(db: AsyncSession, user_message: str, guest_nam
             
         return ai_text
     except Exception as e:
-        print(f"AI ERROR: {str(e)}")
-        return _fallback_response(user_message, guest_name)
+        logger.error("AI ERROR during generate_selam_response: %s", str(e), exc_info=True)
+        fallback_msg = _fallback_response(user_message, guest_name)
+        if guest_id:
+            await save_chat_message(db, guest_id, "assistant", fallback_msg)
+        return fallback_msg
 
 async def handle_guest_message(db: AsyncSession, message: str, guest_name: str = "Guest", guest_id: int = None):
     return await generate_selam_response(db, message, guest_name, guest_id)

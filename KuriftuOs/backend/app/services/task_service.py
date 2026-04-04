@@ -6,7 +6,7 @@ SLA thresholds: URGENT=5min, HIGH=10min, NORMAL=15min, LOW=30min.
 from datetime import datetime, timedelta
 from typing import Optional
 
-from app.db.models.task import Task, TaskPriority, TaskStatus
+from app.models.task import Task, TaskPriority, TaskStatus
 from app.schemas.task import TaskAnalytics
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -33,33 +33,33 @@ class TaskService:
 
         # Active tasks (not completed/escalated)
         active_q = await self.db.execute(
-            base.where(
+            select(func.count()).select_from(Task).where(
                 Task.status.in_([TaskStatus.NEW, TaskStatus.IN_PROGRESS])
-            ).with_only_columns(func.count())
+            )
         )
         total_active = active_q.scalar_one()
 
         # Today's tasks
         today_q = await self.db.execute(
-            base.where(Task.created_at >= today_start).with_only_columns(func.count())
+            select(func.count()).select_from(Task).where(Task.created_at >= today_start)
         )
         total_today = today_q.scalar_one()
 
         # Completed today
         comp_q = await self.db.execute(
-            base.where(
+            select(func.count()).select_from(Task).where(
                 Task.status == TaskStatus.COMPLETED,
                 Task.resolved_at >= today_start,
-            ).with_only_columns(func.count())
+            )
         )
         completed_today = comp_q.scalar_one()
 
         # Escalated today
         esc_q = await self.db.execute(
-            base.where(
+            select(func.count()).select_from(Task).where(
                 Task.status == TaskStatus.ESCALATED,
                 Task.created_at >= today_start,
-            ).with_only_columns(func.count())
+            )
         )
         escalated_today = esc_q.scalar_one()
 
@@ -91,14 +91,25 @@ class TaskService:
         )
         by_status = {row[0].value: row[1] for row in stat_q.all()}
 
+        # AI SENTIMENT DISTRIBUTION
+        sent_q = await self.db.execute(
+            select(Task.sentiment, func.count()).group_by(Task.sentiment)
+        )
+        sentiment_distribution = {row[0]: row[1] for row in sent_q.all()}
+        # Ensure keys exist
+        for key in ["positive", "negative", "neutral"]:
+            if key not in sentiment_distribution:
+                sentiment_distribution[key] = 0
+
         return TaskAnalytics(
             total_active=total_active,
             total_today=total_today,
             completed_today=completed_today,
             escalated_today=escalated_today,
-            avg_resolution_minutes=avg_minutes,
+            avg_resolution_time_today=avg_minutes,
             by_category=by_category,
             by_status=by_status,
+            sentiment_distribution=sentiment_distribution
         )
 
     async def escalate_overdue(self) -> int:
